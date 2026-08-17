@@ -252,6 +252,11 @@ public:
     std::vector<DocumentRect> flash_matches;
     std::vector<std::vector<PagelessDocumentRect>> flash_match_char_rects;
 
+    // [flash] while true, `key_event` routes the vim keys to the text mark commands instead of
+    // letting them become normal commands. Without a mode, binding w/j/k directly would break
+    // scrolling; this is what makes them mean "extend the selection" only while selecting.
+    bool flash_visual_mode = false;
+
     // whether we are in rect/point select mode (some commands require a rectangle to be executed
     // for example `delete_freehand_drawings`)
     bool rect_select_mode = false;
