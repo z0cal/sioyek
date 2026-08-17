@@ -5154,6 +5154,45 @@ public:
     }
 };
 
+// [flash] how many leading characters of the typed text are the word prefix; the rest is the tag.
+constexpr size_t FLASH_PREFIX_LEN = 2;
+
+// flash.nvim-style select: type ~2 characters, get tags only on the words that start with them
+// (instead of on every visible word, the way `keyboard_select` does), then pick one.
+class FlashSelectCommand : public TextCommand {
+public:
+    static inline const std::string cname = "flash_select";
+    static inline const std::string hname = "Flash-style search and select";
+    FlashSelectCommand(MainWidget* w) : TextCommand(cname, w) {};
+
+    // fill_textbar_with_selected_text defaults to true, which would open the bar pre-filled with
+    // the current selection; flash would read that as a prefix, so start empty.
+    std::wstring get_text_default_value() override {
+        return L"";
+    }
+
+    void on_text_change(const QString& new_text) override {
+        std::wstring typed = new_text.toStdWString();
+        if (typed.size() <= FLASH_PREFIX_LEN) {
+            widget->flash_highlight_matching(typed);
+        }
+    }
+
+    void perform() {
+        // Task 5 anchors the selection on the chosen tag here.
+        widget->clear_keyboard_select_highlights();
+    }
+
+    void on_cancel() override {
+        widget->clear_keyboard_select_highlights();
+        Command::on_cancel();
+    }
+
+    std::string text_requirement_name() {
+        return "Flash";
+    }
+};
+
 class KeyboardOverviewCommand : public TextCommand {
 public:
     static inline const std::string cname = "keyboard_overview";
@@ -7234,6 +7273,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     register_command<MoveTextMarkDownCommand>();
     register_command<MoveTextMarkUpCommand>();
     register_command<DumpVisibleWordsCommand>();
+    register_command<FlashSelectCommand>();
     register_command<SetMark>();
     register_command<ToggleDrawingMask>();
     register_command<TurnOnAllDrawings>();
