@@ -56,6 +56,8 @@ extern float CUSTOM_COLOR_CONTRAST;
 extern float DISPLAY_RESOLUTION_SCALE;
 extern float KEYBOARD_SELECT_BACKGROUND_COLOR[4];
 extern float KEYBOARD_SELECT_TEXT_COLOR[4];
+extern float FLASH_LABEL_BACKGROUND_COLOR[4];
+extern float FLASH_LABEL_TEXT_COLOR[4];
 extern bool ALPHABETIC_LINK_TAGS;
 extern int NUM_H_SLICES;
 extern int NUM_V_SLICES;
@@ -1774,6 +1776,31 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
 
         std::vector<std::string> tags = get_tags(word_rects.size());
 
+        int view_width = document_view->get_view_width();
+        int view_height = document_view->get_view_height();
+
+        // [flash] mark the characters the typed prefix matched, so it is visible why these
+        // words became candidates. Drawn before the labels so the badges stay on top.
+        if (flash_label_style && (flash_prefix_rects.size() > 0)) {
+            painter->save();
+            painter->setBackgroundMode(Qt::BGMode::TransparentMode);
+            QPen underline_pen(convert_float4_to_qcolor(FLASH_LABEL_BACKGROUND_COLOR));
+            underline_pen.setWidth(2);
+            painter->setPen(underline_pen);
+
+            for (size_t i = 0; i < flash_prefix_rects.size(); i++) {
+                NormalizedWindowRect prefix_window_rect =
+                    flash_prefix_rects[i].to_window_normalized(document_view);
+
+                int prefix_x0 = static_cast<int>(prefix_window_rect.x0 * view_width / 2 + view_width / 2);
+                int prefix_x1 = static_cast<int>(prefix_window_rect.x1 * view_width / 2 + view_width / 2);
+                int prefix_bottom = static_cast<int>(-prefix_window_rect.y1 * view_height / 2 + view_height / 2);
+
+                painter->drawLine(prefix_x0, prefix_bottom + 1, prefix_x1, prefix_bottom + 1);
+            }
+            painter->restore();
+        }
+
         for (size_t i = 0; i < word_rects.size(); i++) {
             //auto [rect, page] = word_rects[i];
             DocumentRect current_word_rect = word_rects[i];
@@ -1781,10 +1808,8 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
 
             NormalizedWindowRect window_rect = current_word_rect.to_window_normalized(document_view);
 
-            int view_width = static_cast<float>(document_view->get_view_width());
-            int view_height = static_cast<float>(document_view->get_view_height());
-
             int window_x0 = static_cast<int>(window_rect.x0 * view_width / 2 + view_width / 2);
+            int window_x1 = static_cast<int>(window_rect.x1 * view_width / 2 + view_width / 2);
             int window_y0 = static_cast<int>(-window_rect.y0 * view_height / 2 + view_height / 2);
 
             if (i > 0) {
@@ -1807,7 +1832,13 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
             }
             
             if (remaining_tag.size() > 0) {
-                if (highlighted) {
+                if (flash_label_style) {
+                    // beside the word, not on it: flash only labels a handful of matches,
+                    // so there is room, and covering the word hides the prefix just typed.
+                    draw_flash_label(painter, window_x1 + 4, (window_y0 + window_y1) / 2,
+                        std::abs(window_y0 - window_y1), remaining_tag, highlighted);
+                }
+                else if (highlighted) {
                     auto original_pen = painter->pen();
                     auto original_background = painter->background();
                     painter->setPen(qcc4(KEYBOARD_SELECTED_TAG_TEXT_COLOR));
@@ -2371,6 +2402,15 @@ void PdfViewOpenGLWidget::toggle_highlight_words() {
 
 void PdfViewOpenGLWidget::set_highlight_words(std::vector<DocumentRect>& rects) {
     word_rects = std::move(rects);
+
+    // default back to the plain labels; flash opts in right after calling this.
+    flash_label_style = false;
+    flash_prefix_rects.clear();
+}
+
+void PdfViewOpenGLWidget::set_flash_label_style(std::vector<DocumentRect>& prefix_rects) {
+    flash_label_style = true;
+    flash_prefix_rects = std::move(prefix_rects);
 }
 
 void PdfViewOpenGLWidget::set_should_highlight_words(bool should_highlight) {
@@ -2507,6 +2547,52 @@ void PdfViewOpenGLWidget::toggle_fastread_mode() {
 void PdfViewOpenGLWidget::get_overview_size(float* width, float* height) {
     *width = overview_half_width;
     *height = overview_half_height;
+}
+
+// [flash] a rounded badge with the label centered in it, vertically centered on `center_y`
+// and starting at `left`. QPainter's OpaqueMode background, which the plain labels use,
+// paints a rectangle glued to the font metrics -- no padding and no way to round it.
+//
+// Colors go through convert_float4_to_qcolor rather than qcc4: qcc4 reinterprets a color
+// for the active color mode, which turns a deliberate accent into whatever the mode makes
+// of it. A label is an overlay, not part of the page, so it keeps the configured color.
+void PdfViewOpenGLWidget::draw_flash_label(QPainter* painter, int left, int center_y,
+    int word_height, const QString& label, bool highlighted) {
+
+    const int padding_x = 4;
+    const int padding_y = 1;
+    const int radius = 3;
+    const int min_font_size = 8;
+
+    QFont label_font = painter->font();
+    label_font.setBold(true);
+
+    // KEYBOARD_SELECT_FONT_SIZE is a fixed pixel size, which at normal zoom draws a badge
+    // taller than the line it sits on. Follow the word instead, up to that size.
+    if ((word_height > 0) && (word_height < label_font.pixelSize())) {
+        label_font.setPixelSize(std::max(word_height, min_font_size));
+    }
+
+    painter->save();
+    painter->setFont(label_font);
+    painter->setRenderHint(QPainter::Antialiasing, true);
+    painter->setBackgroundMode(Qt::BGMode::TransparentMode);
+
+    QFontMetrics metrics(label_font);
+    int width = metrics.horizontalAdvance(label) + 2 * padding_x;
+    int height = metrics.height() + 2 * padding_y;
+    QRect badge(left, center_y - height / 2, width, height);
+
+    painter->setPen(Qt::NoPen);
+    painter->setBrush(convert_float4_to_qcolor(highlighted ? KEYBOARD_SELECTED_TAG_BACKGROUND_COLRO
+                                                           : FLASH_LABEL_BACKGROUND_COLOR));
+    painter->drawRoundedRect(badge, radius, radius);
+
+    painter->setPen(convert_float4_to_qcolor(highlighted ? KEYBOARD_SELECTED_TAG_TEXT_COLOR
+                                                         : FLASH_LABEL_TEXT_COLOR));
+    painter->drawText(badge, Qt::AlignCenter, label);
+
+    painter->restore();
 }
 
 void PdfViewOpenGLWidget::setup_text_painter(QPainter* painter) {

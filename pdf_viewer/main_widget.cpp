@@ -4789,6 +4789,18 @@ void MainWidget::flash_highlight_matching(const std::wstring& prefix) {
     // otherwise flash_matches is left empty and the tag can no longer be resolved.
     std::vector<DocumentRect> to_draw = flash_matches;
     opengl_widget->set_highlight_words(to_draw);
+
+    // the characters the prefix matched, so the drawing code can underline them. Same
+    // caveat as above: the setter moves from this vector.
+    std::vector<DocumentRect> prefix_rects;
+    for (size_t i = 0; i < flash_matches.size(); i++) {
+        size_t n = std::min(prefix.size(), flash_match_char_rects[i].size());
+        for (size_t j = 0; j < n; j++) {
+            prefix_rects.push_back(DocumentRect(flash_match_char_rects[i][j], flash_matches[i].page));
+        }
+    }
+    opengl_widget->set_flash_label_style(prefix_rects);
+
     opengl_widget->set_should_highlight_words(true);
     invalidate_render();
 }

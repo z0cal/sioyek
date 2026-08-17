@@ -130,6 +130,15 @@ private:
     std::string tag_prefix = "";
     std::vector<std::string> highlighted_tags;
 
+    // [flash] `keyboard_select` labels every visible word, so its labels have to sit on the
+    // words themselves. Flash labels only a handful of matches, which leaves room to draw
+    // them beside the word instead of on top of it. This switches between the two looks.
+    bool flash_label_style = false;
+
+    // [flash] the characters the typed prefix matched, underlined so it is clear why a word
+    // is a candidate. Parallel to nothing else: purely decorative.
+    std::vector<DocumentRect> flash_prefix_rects;
+
     std::optional<AbsoluteRect> pending_portal_rect = {};
 
     QIcon bookmark_icon;
@@ -241,6 +250,11 @@ public:
     void set_should_highlight_words(bool should_highlight);
     std::vector<DocumentRect> get_highlight_word_rects();
 
+    // [flash] draw the labels beside the words rather than over them, and underline the
+    // characters in `prefix_rects`. Reset by set_highlight_words, so `keyboard_select`
+    // never has to know this exists.
+    void set_flash_label_style(std::vector<DocumentRect>& prefix_rects);
+
     bool on_vertical_scroll();
     int get_num_search_results();
     int get_current_search_result_index();
@@ -295,6 +309,8 @@ public:
     bool is_rotated();
     void toggle_fastread_mode();
     void setup_text_painter(QPainter* painter);
+    void draw_flash_label(QPainter* painter, int left, int center_y, int word_height,
+        const QString& label, bool highlighted);
     void get_overview_window_vertices(float out_vertices[2 * 4]);
 
     void set_selected_rectangle(AbsoluteRect selected);

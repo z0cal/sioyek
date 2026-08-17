@@ -267,6 +267,11 @@ float HIGHLIGHT_DELETE_THRESHOLD = 0.1f;
 float SCROLL_VIEW_SENSITIVITY = 1.0f;
 float KEYBOARD_SELECT_BACKGROUND_COLOR[] = { 0.9f , 0.75f, 0.0f, 1.0f };
 float KEYBOARD_SELECT_TEXT_COLOR[] = { 0.0f , 0.0f, 0.5f, 1.0f };
+// [flash] same palette as the plain keyboard_select labels, so the two commands read as
+// the same feature. Separate entries because the flash badge sits beside the word rather
+// than on it, and may want a different contrast once someone tries it on a light theme.
+float FLASH_LABEL_BACKGROUND_COLOR[] = { 0.9f , 0.75f, 0.0f, 1.0f };
+float FLASH_LABEL_TEXT_COLOR[] = { 0.0f , 0.0f, 0.5f, 1.0f };
 float KEYBOARD_SELECTED_TAG_TEXT_COLOR[] = { 1.0f , 1.0f, 1.0f, 1.0f };
 float KEYBOARD_SELECTED_TAG_BACKGROUND_COLRO[] = { 0.0f , 0.0f, 0.0f, 1.0f };
 
@@ -922,6 +927,8 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
     add_color4(L"visual_mark_color",DEFAULT_VERTICAL_LINE_COLOR);
     add_color4(L"keyboard_select_background_color", KEYBOARD_SELECT_BACKGROUND_COLOR);
     add_color4(L"keyboard_select_text_color", KEYBOARD_SELECT_TEXT_COLOR);
+    add_color4(L"flash_label_background_color", FLASH_LABEL_BACKGROUND_COLOR);
+    add_color4(L"flash_label_text_color", FLASH_LABEL_TEXT_COLOR);
     add_color4(L"keyboard_selected_tag_text_color", KEYBOARD_SELECTED_TAG_TEXT_COLOR);
     add_color4(L"keyboard_selected_tag_background_color", KEYBOARD_SELECTED_TAG_BACKGROUND_COLRO);
     add_float(L"synctex_highlight_timeout", &HIDE_SYNCTEX_HIGHLIGHT_TIMEOUT, FloatExtras{-1.0f, 100.0f});
