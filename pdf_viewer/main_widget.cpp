@@ -2281,6 +2281,38 @@ void MainWidget::key_event(bool released, QKeyEvent* kevent, bool is_auto_repeat
 
     }
 
+    // [flash] same shape as the typing_location block above: a state member gates a block that
+    // handles the key itself and returns, so it never becomes a normal command. This is what
+    // lets w/b/j/k mean "extend the selection" without stealing them from scrolling.
+    if (flash_visual_mode && (!released)) {
+        if (kevent->key() == Qt::Key::Key_Escape) {
+            flash_visual_mode = false;
+            clear_selected_text();
+            invalidate_render();
+            return;
+        }
+        if (kevent->text().size() > 0) {
+            char c = kevent->text().at(0).unicode();
+            switch (c) {
+            case 'w': handle_move_text_mark_forward(true);   break;
+            case 'b': handle_move_text_mark_backward(true);  break;
+            case 'l': handle_move_text_mark_forward(false);  break;
+            case 'h': handle_move_text_mark_backward(false); break;
+            case 'j': handle_move_text_mark_down();          break;
+            case 'k': handle_move_text_mark_up();            break;
+            case 'o': handle_toggle_text_mark();             break;
+            case 'y':
+                handle_command_types(command_manager->get_command_with_name(this, "copy"), 0);
+                flash_visual_mode = false;
+                break;
+            default:
+                return;
+            }
+            invalidate_render();
+            return;
+        }
+    }
+
 
     if (released == false) {
 
@@ -4777,6 +4809,7 @@ void MainWidget::flash_anchor_at_tag(const std::string& tag) {
     main_document_view->should_show_text_selection_marker = true;
     main_document_view->mark_end = true;
     selected_text_is_dirty = true;
+    flash_visual_mode = true;
     invalidate_render();
 }
 
