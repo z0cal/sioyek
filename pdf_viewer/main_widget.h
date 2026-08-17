@@ -629,6 +629,10 @@ public:
     // `highlight_words` does. Fills `flash_matches`, which `flash_anchor_at_tag` then indexes.
     void flash_highlight_matching(const std::wstring& prefix);
 
+    // [flash] select the word the label points at and leave the text cursor on it, so the
+    // move_text_mark_* commands can carry on from there.
+    void flash_anchor_at_tag(const std::string& tag);
+
     bool is_rotated();
     void on_new_paper_added(const std::wstring& file_path);
     void scroll_overview(int vertical_amount, int horizontal_amount = 0);
