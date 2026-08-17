@@ -638,6 +638,10 @@ public:
     // move_text_mark_* commands can carry on from there.
     void flash_anchor_at_tag(const std::string& tag);
 
+    // [flash] how many characters the current labels are made of, or 0 when nothing matched.
+    // Uses the same generator the drawing code does, so the two can never disagree.
+    int flash_tag_length();
+
     bool is_rotated();
     void on_new_paper_added(const std::wstring& file_path);
     void scroll_overview(int vertical_amount, int horizontal_amount = 0);

@@ -4793,6 +4793,11 @@ void MainWidget::flash_highlight_matching(const std::wstring& prefix) {
     invalidate_render();
 }
 
+int MainWidget::flash_tag_length() {
+    if (flash_matches.size() == 0) return 0;
+    return get_num_tag_digits(static_cast<int>(flash_matches.size()));
+}
+
 void MainWidget::flash_anchor_at_tag(const std::string& tag) {
     int index = get_index_from_tag(tag);
     if ((index < 0) || (index >= static_cast<int>(flash_matches.size()))) return;
@@ -8962,6 +8967,19 @@ void MainWidget::toggle_pdf_annotations() {
 void MainWidget::handle_command_text_change(const QString& new_text) {
     if (pending_command_instance) {
         pending_command_instance->on_text_change(new_text);
+
+        // [flash] a command can declare it has everything it needs, in which case we confirm
+        // the text requirement here instead of waiting for Enter. This has to happen after
+        // on_text_change has returned: handle_pending_text_command destroys the command
+        // instance, and inside on_text_change we would still be executing its method.
+        // Same three steps as the Return branch in key_event.
+        if (pending_command_instance->wants_immediate_confirm()) {
+            text_command_line_edit_container->hide();
+            setFocus();
+            handle_pending_text_command(new_text.toStdWString());
+            return;
+        }
+
         validate_render();
     }
 }

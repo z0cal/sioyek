@@ -74,6 +74,13 @@ public:
     virtual bool is_holdable();
     virtual void on_key_hold();
     virtual void on_text_change(const QString& new_text);
+
+    // [flash] when a command can tell from the text alone that it has everything it needs,
+    // it returns true here and the text requirement is confirmed without waiting for Enter.
+    // Checked by `handle_command_text_change` *after* `on_text_change` returns, because
+    // confirming destroys the command instance whose method we would still be inside.
+    virtual bool wants_immediate_confirm();
+
     virtual std::optional<QString> get_file_path_requirement_root_dir();
 
     void set_next_requirement_with_string(std::wstring str);

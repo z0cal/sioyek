@@ -933,6 +933,11 @@ void Command::on_text_change(const QString& new_text) {
 
 }
 
+// [flash] commands wait for Enter unless they opt out of it.
+bool Command::wants_immediate_confirm() {
+    return false;
+}
+
 bool Command::is_holdable() {
     return false;
 }
@@ -5156,7 +5161,20 @@ public:
         std::wstring typed = new_text.toStdWString();
         if (typed.size() <= FLASH_PREFIX_LEN) {
             widget->flash_highlight_matching(typed);
+            ready_to_confirm = false;
         }
+        else {
+            // the tag is as long as the label generator made it, which depends on how many
+            // matches there are (1 letter up to 26 of them, 2 beyond). Once that many
+            // characters are in, there is nothing left to type and Enter would be ceremony.
+            int tag_length = widget->flash_tag_length();
+            ready_to_confirm = (tag_length > 0) &&
+                (typed.size() >= FLASH_PREFIX_LEN + static_cast<size_t>(tag_length));
+        }
+    }
+
+    bool wants_immediate_confirm() override {
+        return ready_to_confirm;
     }
 
     void perform() {
@@ -5176,6 +5194,10 @@ public:
     std::string text_requirement_name() {
         return "Flash";
     }
+
+private:
+    // set by on_text_change, read by wants_immediate_confirm right afterwards.
+    bool ready_to_confirm = false;
 };
 
 class KeyboardOverviewCommand : public TextCommand {
