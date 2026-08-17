@@ -2291,7 +2291,13 @@ void MainWidget::key_event(bool released, QKeyEvent* kevent, bool is_auto_repeat
             invalidate_render();
             return;
         }
-        if (kevent->text().size() > 0) {
+        // Only bare letters drive the mode. A chord like <C-c> still produces a non-empty
+        // text() (the control character), so without this guard the mode would swallow every
+        // ctrl/alt binding the user has while a selection is active.
+        bool has_modifier = kevent->modifiers() &
+            (Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier);
+
+        if ((!has_modifier) && (kevent->text().size() > 0)) {
             char c = kevent->text().at(0).unicode();
             switch (c) {
             case 'w': handle_move_text_mark_forward(true);   break;
