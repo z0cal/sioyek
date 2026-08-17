@@ -4736,13 +4736,47 @@ void MainWidget::flash_highlight_matching(const std::wstring& prefix) {
             }
         }
         if (matches) {
+            // words come back with their trailing separator ("Incompleteness "), and its rect is
+            // part of the char list. Drop it, so that anchoring can use the real last character.
+            size_t n = std::min(word.size(), char_rects[i].size());
+            while (n > 0 && iswspace(word[n - 1])) n--;
+
             flash_matches.push_back(rects[i]);
-            flash_match_char_rects.push_back(char_rects[i]);
+            flash_match_char_rects.push_back(
+                std::vector<PagelessDocumentRect>(char_rects[i].begin(), char_rects[i].begin() + n));
         }
     }
 
-    opengl_widget->set_highlight_words(flash_matches);
+    // set_highlight_words takes a non-const ref and MOVES from it, so hand it a copy —
+    // otherwise flash_matches is left empty and the tag can no longer be resolved.
+    std::vector<DocumentRect> to_draw = flash_matches;
+    opengl_widget->set_highlight_words(to_draw);
     opengl_widget->set_should_highlight_words(true);
+    invalidate_render();
+}
+
+void MainWidget::flash_anchor_at_tag(const std::string& tag) {
+    int index = get_index_from_tag(tag);
+    if ((index < 0) || (index >= static_cast<int>(flash_matches.size()))) return;
+
+    const std::vector<PagelessDocumentRect>& chars = flash_match_char_rects[index];
+    if (chars.size() == 0) return;
+
+    int page = flash_matches[index].page;
+    WindowRect first = DocumentRect(chars[0], page).to_window(main_document_view);
+    WindowRect last = DocumentRect(chars[chars.size() - 1], page).to_window(main_document_view);
+
+    // Anchor on the first character and close on the *right* edge of the last one.
+    // `handle_keyboard_select` instead closes on the left edge of the second-to-last character,
+    // which silently drops the final letter ("separately" comes out as "separatel").
+    handle_left_click({ first.x0 + 1, (first.y0 + first.y1) / 2 }, true, false, false, false, false);
+    handle_left_click({ last.x1 - 1, (last.y0 + last.y1) / 2 }, false, false, false, false, false);
+
+    // hand over to the existing text mark machinery. `mark_end` decides which end the
+    // move_text_mark_* commands act on, and it survives across selections, so pin it here.
+    main_document_view->should_show_text_selection_marker = true;
+    main_document_view->mark_end = true;
+    selected_text_is_dirty = true;
     invalidate_render();
 }
 

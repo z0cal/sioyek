@@ -5179,7 +5179,11 @@ public:
     }
 
     void perform() {
-        // Task 5 anchors the selection on the chosen tag here.
+        std::wstring typed = text.value();
+        if (typed.size() > FLASH_PREFIX_LEN) {
+            std::string tag = QString::fromStdWString(typed.substr(FLASH_PREFIX_LEN)).toStdString();
+            widget->flash_anchor_at_tag(tag);
+        }
         widget->clear_keyboard_select_highlights();
     }
 
