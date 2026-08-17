@@ -4715,6 +4715,37 @@ void MainWidget::get_visible_words_with_text(std::vector<std::wstring>& words,
     }
 }
 
+void MainWidget::flash_highlight_matching(const std::wstring& prefix) {
+    std::vector<std::wstring> words;
+    std::vector<DocumentRect> rects;
+    std::vector<std::vector<PagelessDocumentRect>> char_rects;
+    get_visible_words_with_text(words, rects, &char_rects);
+
+    flash_matches.clear();
+    flash_match_char_rects.clear();
+
+    for (size_t i = 0; i < words.size(); i++) {
+        const std::wstring& word = words[i];
+        if (word.size() < prefix.size()) continue;
+
+        bool matches = true;
+        for (size_t j = 0; j < prefix.size(); j++) {
+            if (towlower(word[j]) != towlower(prefix[j])) {
+                matches = false;
+                break;
+            }
+        }
+        if (matches) {
+            flash_matches.push_back(rects[i]);
+            flash_match_char_rects.push_back(char_rects[i]);
+        }
+    }
+
+    opengl_widget->set_highlight_words(flash_matches);
+    opengl_widget->set_should_highlight_words(true);
+    invalidate_render();
+}
+
 bool MainWidget::is_rotated() {
     return opengl_widget->is_rotated();
 }

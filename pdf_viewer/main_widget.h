@@ -246,6 +246,12 @@ public:
     // selected text (using mouse cursor or other methods) which is used e.g. for copying or highlighting
     std::wstring selected_text;
 
+    // [flash] the visible words that matched the prefix typed into `flash_select`, in reading
+    // order. The tag drawn over the i-th match is `get_tags(n)[i]`, so the label the user types
+    // indexes straight into these (pdf_view_opengl_widget.cpp draws tags by position).
+    std::vector<DocumentRect> flash_matches;
+    std::vector<std::vector<PagelessDocumentRect>> flash_match_char_rects;
+
     // whether we are in rect/point select mode (some commands require a rectangle to be executed
     // for example `delete_freehand_drawings`)
     bool rect_select_mode = false;
@@ -618,6 +624,10 @@ public:
     void get_visible_words_with_text(std::vector<std::wstring>& words,
         std::vector<DocumentRect>& rects,
         std::vector<std::vector<PagelessDocumentRect>>* char_rects = nullptr);
+
+    // [flash] tag only the visible words starting with `prefix`, instead of every word the way
+    // `highlight_words` does. Fills `flash_matches`, which `flash_anchor_at_tag` then indexes.
+    void flash_highlight_matching(const std::wstring& prefix);
 
     bool is_rotated();
     void on_new_paper_added(const std::wstring& file_path);
