@@ -4688,6 +4688,33 @@ std::optional<PagelessDocumentRect> MainWidget::get_tag_rect(std::string tag, st
     return {};
 }
 
+void MainWidget::get_visible_words_with_text(std::vector<std::wstring>& words,
+    std::vector<DocumentRect>& rects,
+    std::vector<std::vector<PagelessDocumentRect>>* char_rects) {
+
+    int page = get_current_page_number();
+    fz_stext_page* stext_page = main_document_view->get_document()->get_stext_with_page_number(page);
+    if (stext_page == nullptr) return;
+
+    std::vector<fz_stext_char*> flat_chars;
+    get_flat_chars_from_stext_page(stext_page, flat_chars);
+
+    std::vector<std::wstring> all_words;
+    std::vector<std::vector<PagelessDocumentRect>> all_word_char_rects;
+    get_word_rect_list_from_flat_chars(flat_chars, all_words, all_word_char_rects);
+
+    for (size_t i = 0; i < all_words.size(); i++) {
+        DocumentRect word_rect(create_word_rect(all_word_char_rects[i]), page);
+        if (is_rect_visible(word_rect)) {
+            words.push_back(all_words[i]);
+            rects.push_back(word_rect);
+            if (char_rects != nullptr) {
+                char_rects->push_back(all_word_char_rects[i]);
+            }
+        }
+    }
+}
+
 bool MainWidget::is_rotated() {
     return opengl_widget->is_rotated();
 }

@@ -612,6 +612,13 @@ public:
     std::optional<PagelessDocumentRect> get_tag_rect(std::string tag, std::vector<PagelessDocumentRect>* word_chars = nullptr);
     std::optional<WindowRect> get_tag_window_rect(std::string tag, std::vector<WindowRect>* char_rects = nullptr);
 
+    // [flash] visible words in reading order, together with their text. `highlight_words`
+    // and `get_tag_rect` only expose the rects, but filtering by a typed prefix needs the
+    // text too. The output vectors are parallel: words[i] is spelled inside rects[i].
+    void get_visible_words_with_text(std::vector<std::wstring>& words,
+        std::vector<DocumentRect>& rects,
+        std::vector<std::vector<PagelessDocumentRect>>* char_rects = nullptr);
+
     bool is_rotated();
     void on_new_paper_added(const std::wstring& file_path);
     void scroll_overview(int vertical_amount, int horizontal_amount = 0);

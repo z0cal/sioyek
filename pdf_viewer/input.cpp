@@ -5135,6 +5135,25 @@ public:
     }
 };
 
+// [flash] temporary: proves get_visible_words_with_text returns the visible words in
+// reading order. Remove once flash_select is verified.
+class DumpVisibleWordsCommand : public Command {
+public:
+    static inline const std::string cname = "dump_visible_words";
+    static inline const std::string hname = "Debug: dump visible words";
+    DumpVisibleWordsCommand(MainWidget* w) : Command(cname, w) {};
+
+    void perform() {
+        std::vector<std::wstring> words;
+        std::vector<DocumentRect> rects;
+        widget->get_visible_words_with_text(words, rects);
+        std::wcerr << L"visible words: " << words.size() << std::endl;
+        for (size_t i = 0; i < words.size() && i < 20; i++) {
+            std::wcerr << i << L": " << words[i] << std::endl;
+        }
+    }
+};
+
 class KeyboardOverviewCommand : public TextCommand {
 public:
     static inline const std::string cname = "keyboard_overview";
@@ -7214,6 +7233,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     register_command<MoveTextMarkBackwardWordCommand>();
     register_command<MoveTextMarkDownCommand>();
     register_command<MoveTextMarkUpCommand>();
+    register_command<DumpVisibleWordsCommand>();
     register_command<SetMark>();
     register_command<ToggleDrawingMask>();
     register_command<TurnOnAllDrawings>();
