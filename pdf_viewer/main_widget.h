@@ -283,7 +283,7 @@ public:
     // in select highlight mode, we immediately highlight the text when it is selected
     // with highlight type of `select_highlight_type` 
     bool is_select_highlight_mode = false;
-    char select_highlight_type = 'a';
+    char select_highlight_type = 'z';
 
     // color type to use when freehand drawing
     char current_freehand_type = 'r';

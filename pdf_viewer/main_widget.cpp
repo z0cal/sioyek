@@ -2311,6 +2311,10 @@ void MainWidget::key_event(bool released, QKeyEvent* kevent, bool is_auto_repeat
                 handle_command_types(command_manager->get_command_with_name(this, "copy"), 0);
                 flash_visual_mode = false;
                 break;
+            case 'H':
+                handle_command_types(command_manager->get_command_with_name(this, "add_highlight_with_current_type"), 0);
+                flash_visual_mode = false;
+                break;
             default:
                 return;
             }
